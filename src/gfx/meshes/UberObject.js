@@ -1,6 +1,7 @@
 
 
 import UberMaterial from '../shaders/UberMaterial';
+
 export default function(SuperClass) {
   function NewObjectType() {
     SuperClass.apply(this, arguments);
@@ -15,15 +16,7 @@ export default function(SuperClass) {
     this._update();
   };
 
-  NewObjectType.prototype._onBeforeRender = function(renderer, scene/*, camera*/) {
-    var material = this.material;
-    if (!material.uberOptions) {
-      return;
-    }
-
-    material.uberOptions.dirShadowMatrix.copy(scene.children[1].shadow.matrix);
-    material.uberOptions.directionalShadowMap = scene.children[1].shadow.map.texture;
-  };
+  NewObjectType.prototype._onBeforeRender = function() {};
 
   NewObjectType.prototype._update = function() {
     var material = this.material;

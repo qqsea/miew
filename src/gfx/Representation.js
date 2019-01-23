@@ -7,6 +7,13 @@ import gfxutils from './gfxutils';
 import settings from '../settings';
 
 function Representation(index, mode, colorer, selector) {
+  const startMaterialValues = {
+    clipPlane: settings.now.draft.clipPlane,
+    fogTransparent: settings.now.bg.transparent,
+    shadowmap: settings.now.shadow.shadowMap,
+    pcf: settings.now.shadow.pcf,
+    soft: settings.now.shadow.soft
+  };
   this.index = index;
   this.mode = mode;
   this.colorer = colorer;
@@ -14,7 +21,7 @@ function Representation(index, mode, colorer, selector) {
   this.selectorString = ''; // FIXME
   this.count = 0;
   this.material = new UberMaterial();
-  this.material.setValues({clipPlane: settings.now.draft.clipPlane, fogTransparent: settings.now.bg.transparent});
+  this.material.setValues(startMaterialValues);
   this.materialPreset = materials.first;
   this.needsRebuild = true;
   this.visible = true;
@@ -49,6 +56,7 @@ Representation.prototype.reset = function() {
   this.selectionGeo = null;
 };
 
+
 Representation.prototype.buildGeometry = function(complex) {
   // console.time('buildGeometry');
   this.reset();
@@ -60,19 +68,9 @@ Representation.prototype.buildGeometry = function(complex) {
   }
   // console.timeEnd('buildGeometry');
   this.geo.visible = this.visible;
-  this.geo.traverse(function(object) {
-    if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
-      object.castShadow = true;
-      object.recieveShadow = true;
-    }
-    if (object.material instanceof UberMaterial) {
-      const depthMaterial = new UberMaterial();
-      depthMaterial.copy(object.material);
-      depthMaterial.setValues({colorFromDepth: true});
-      object.material.setValues({shadowmap:true});
-      object.customDepthMaterial = depthMaterial;
-    }
-  });
+
+  gfxutils.processMaterialForShadow(this.geo, this.material);
+
   return this.geo;
 };
 
