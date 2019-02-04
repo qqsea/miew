@@ -451,6 +451,20 @@ var defaults = {
       baseColor: 0xFFFFFF,
     },
 
+    ////////////////////          CARBON         //////////////////////////
+    /**
+     * Carbon colorer options.
+     *
+     * @typedef CarbonColorerOptions
+     *
+     * @property {number} color - Single color to paint carbons
+     * @property {number} factor - Color factor for not carbon atoms.
+     */
+    CB: {
+      color: 0x909090,
+      factor: 0.6,
+    },
+
     ////////////////////         SEQUENCE         //////////////////////////
     /**
      * Sequence colorer options.
@@ -558,6 +572,9 @@ var defaults = {
    * @instance
    */
   fogFarFactor: 1, //[0, 1]
+  fogAlpha : 1.0,
+  fogColor: 0x000000,
+  fogColorEnable: false,
 
   /*
      * Palette used for molecule coloring.
@@ -703,6 +720,16 @@ var defaults = {
    * @instance
    */
   fxaa: true,
+  /**
+   * Outline depths
+   * @type {boolean}
+   * @instance
+   */
+  outline: {
+    on : false,
+    color : 0x000000,
+    threshold : 0.1
+  },
 
   /**
    * Ambient Occlusion special effect.
@@ -715,15 +742,13 @@ var defaults = {
    * Shadows options.
    *
    * @property {boolean} shadowMap - enable/disable.
-   * @property {boolean} percentage-closer filtering - enable/disable.
-   * @property {boolean} soft shadows - enable/disable (only for percentage-closer filtering).
+   * @property {string} basic/percentage-closer filtering/percentage-closer filtering with bilinear filtering.
    * @property {number} radius for percentage-closer filtering.
    */
   shadow: {
-    shadowMap: false,
-    pcf: true,
-    soft: true,
-    radius: 5.0,
+    on: false,
+    type: 'pcf'/*basic, pcf4*/,
+    radius: 3.0,
   },
 
   /**
@@ -830,9 +855,9 @@ var defaults = {
   },
 };
 
-  //////////////////////////////////////////////////////////////////////////
-  /////////////////////      SETTINGS CLASS      ///////////////////////////
-  //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+/////////////////////      SETTINGS CLASS      ///////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 function Settings() {
   EventDispatcher.call(this);

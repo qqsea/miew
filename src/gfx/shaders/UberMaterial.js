@@ -29,6 +29,8 @@ var defaultUniforms = THREE.UniformsUtils.merge([
     'projMatrixInv': {type: '4fv', value: new THREE.Matrix4()},
     'viewport': {type: 'v2', value: new THREE.Vector2()},
     'lineWidth': {type: 'f', value: 2.0},
+    //default value must be the same as settings
+    'fogAlpha': {type: 'f', value: 1.0}
   }
 
 ]);
@@ -49,6 +51,7 @@ var uberOptionNames = [
   'projMatrixInv',
   'viewport',
   'lineWidth',
+  'fogAlpha'
 ];
 
 function UberMaterial(params) {
@@ -83,8 +86,7 @@ function UberMaterial(params) {
   // used to render shadowmap
   this.shadowmap = false;
   // used to describe shadowmap type
-  this.pcf = true;
-  this.soft = true;
+  this.shadowmapType = 'pcf';
   // used to render pixel view deph
   this.colorFromDepth = false;
   // used to render dashed line
@@ -95,6 +97,10 @@ function UberMaterial(params) {
   this.thickLine = false;
   // makes fog begin transparency (required for transparent background)
   this.fogTransparent = false;
+  // used to render surface normals to G buffer for ssao effect
+  this.normalsToGBuffer = false;
+  //used for toon material
+  this.toonShading = false;
 
   // uber options of "root" materials are inherited from single uber-options object that resides in prototype
   this.uberOptions = Object.create(UberMaterial.prototype.uberOptions);
@@ -139,6 +145,7 @@ UberMaterial.prototype.uberOptions = {
   projMatrixInv: new THREE.Matrix4(),
   viewport: new THREE.Vector2(800, 600),
   lineWidth: 2.0,
+  fogAlpha: 1.0,
 
   copy: function(source) {
     this.diffuse.copy(source.diffuse);
@@ -156,11 +163,14 @@ UberMaterial.prototype.uberOptions = {
     this.projMatrixInv = source.projMatrixInv;
     this.viewport = source.viewport;
     this.lineWidth = source.lineWidth; // used for thick lines only
+    this.toonShading = source.toonShading;
+    this.fogAlpha = source.fogAlpha;
   }
 };
 
 UberMaterial.prototype.copy = function(source) {
 
+  //TODO Why not RawShaderMaterial?
   THREE.ShaderMaterial.prototype.copy.call(this, source);
 
   this.fog = source.fog;
@@ -177,13 +187,14 @@ UberMaterial.prototype.copy = function(source) {
   this.fakeOpacity = source.fakeOpacity;
   this.colorFromPos = source.colorFromPos;
   this.shadowmap = source.shadowmap;
-  this.pcf = source.pcf;
-  this.soft = source.soft;
+  this.shadowmapType = source.shadowmapType;
   this.colorFromDepth = source.colorFromDepth;
   this.prepassTransparancy = source.prepassTransparancy;
   this.dashedLine = source.dashedLine;
   this.thickLine = source.thickLine;
   this.fogTransparent = source.fogTransparent;
+  this.normalsToGBuffer = source.normalsToGBuffer;
+  this.toonShading = source.toonShading;
 
   this.uberOptions.copy(source.uberOptions);
 
@@ -256,12 +267,10 @@ UberMaterial.prototype.setValues = function(values) {
   }
   if (this.shadowmap) {
     defines.SHADOWMAP = 1;
-    if (this.pcf) {
-      if (this.soft) {
-        defines.SHADOWMAP_PCF_SOFT = 1;
-      } else {
-        defines.SHADOWMAP_PCF_SHARP = 1;
-      }
+    if (this.shadowmapType === 'pcf4') {
+      defines.SHADOWMAP_PCF_SOFT = 1;
+    } else if (this.shadowmapType === 'pcf') {
+      defines.SHADOWMAP_PCF_SHARP = 1;
     } else {
       defines.SHADOWMAP_BASIC = 1;
     }
@@ -280,6 +289,13 @@ UberMaterial.prototype.setValues = function(values) {
   }
   if (this.fogTransparent) {
     defines.FOG_TRANSPARENT = 1;
+  }
+  if (this.normalsToGBuffer) {
+    extensions.drawBuffers = 1;
+    defines.NORMALS_TO_G_BUFFER = 1;
+  }
+  if (this.toonShading) {
+    defines.TOON_SHADING = 1;
   }
   // set dependent values
   this.defines = defines;
